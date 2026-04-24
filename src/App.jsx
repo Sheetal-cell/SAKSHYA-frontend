@@ -173,6 +173,116 @@ const GLOBAL_CSS = `
     .parties-dates { grid-template-columns: 1fr !important; }
     .details-grid  { grid-template-columns: 1fr 1fr !important; }
   }
+
+  @media (max-width: 768px) {
+  nav {
+    padding: 0 10px !important;
+  }
+
+  /* Allow proper spacing */
+  nav > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  nav > div:last-child {
+    flex-shrink: 0;
+  }
+}
+
+
+ @media (max-width: 768px) {
+  footer > div > div:first-child {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    text-align: center;
+  }
+
+  footer img {
+    margin: 0 auto;
+  }
+
+  footer p {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  footer > div > div:last-child {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 8px !important;
+  }
+}
+
+
+@media (max-width: 768px) {
+  #home {
+    padding-top: 140px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-illustration {
+    display: block !important;
+    width: 100%;
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .hero-illustration > div {
+    margin: 0 auto !important;
+    max-width: 260px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  /* Make sure navbar stays above */
+  nav {
+    z-index: 1000;
+  }
+
+  /* Logo (move it BELOW navbar) */
+  #home::before {
+    content: "";
+    position: absolute;
+    top: 80px; /* ⬅️ increase this (navbar height + gap) */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42px;
+    height: 42px;
+
+    background-image: url('/logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    z-index: 10; /* below navbar but visible */
+  }
+
+  /* Text below logo */
+  #home::after {
+    content: "SAKSHYA";
+    position: absolute;
+    top: 130px; /* ⬅️ keep spacing below logo */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: white;
+
+    z-index: 10;
+  }
+
+  /* Push content down properly */
+  #home {
+    position: relative;
+    padding-top: 180px !important; /* ⬅️ increase to avoid overlap */
+  }
+}
+
   @media (max-width: 480px) {
     .features-grid { grid-template-columns: 1fr !important; }
     .stats-row { grid-template-columns: 1fr !important; }
@@ -365,7 +475,13 @@ function Navbar({ theme, toggleTheme, C, onHome }) {
       display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "0 32px",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  overflowX: "auto",
+  maxWidth: "100%"
+}}>
         <img
   src={logo}
   alt="SAKSHYA Logo"
