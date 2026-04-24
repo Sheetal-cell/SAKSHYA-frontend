@@ -1,10 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { analyzeJudgment } from "./api";
+import logo from "./assets/sakshya-logo.png";
+import img from "./assets/img.png";
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const LIGHT = {
   bg: "#f4f5f7",
   surface: "#ffffff",
+  tricolor: "linear-gradient(90deg, #FF9933, #FFFFFF, #138808)",
   card: "#ffffff",
   border: "#e2e6ed",
   accent: "#1a5cff",
@@ -259,7 +262,16 @@ function HeroIllustration({ C }) {
         boxShadow: `0 0 60px ${C.accent}30`,
       }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 52, lineHeight: 1 }}>⚖️</div>
+          <img
+  src={img}
+  alt="SAKSHYA"
+  style={{
+    width: 100,
+    height: 100,
+    objectFit: "contain",
+    filter: "drop-shadow(0 0 12px rgba(59,127,255,0.5))"
+  }}
+/>
           <div style={{ fontSize: 10, color: C.accent, fontWeight: 800, letterSpacing: "0.12em", marginTop: 6 }}>SAKSHYA</div>
         </div>
       </div>
@@ -354,14 +366,31 @@ function Navbar({ theme, toggleTheme, C, onHome }) {
       padding: "0 32px",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: `linear-gradient(135deg, ${C.accent}, #0033bb)`,
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17,
-        }}>⚖️</div>
+        <img
+  src={logo}
+  alt="SAKSHYA Logo"
+  style={{
+    width: 36,
+    height: 36,
+    objectFit: "contain",
+    transition: "transform 0.2s",
+    borderRadius: 8,
+    boxShadow: `0 0 12px ${C.accent}40`
+  }}
+  onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.1)"}
+  onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
+/>
         <div>
           <div style={{ fontWeight: 800, fontSize: 13, color: C.textPrimary, letterSpacing: "-0.01em" }}>SAKSHYA</div>
-          <div style={{ fontSize: 9, color: C.textMuted, letterSpacing: "0.1em", marginTop: -1 }}>CCMS · JUDGMENT INTELLIGENCE</div>
+          <div style={{
+  fontSize: 9,
+  color: C.textMuted,
+  letterSpacing: "0.08em",
+  marginTop: -1,
+  maxWidth: 220
+}}>
+  System for Actionable Knowledge from Court & Hearing Yield Analysis
+</div>
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -401,29 +430,74 @@ function HeroSection({ C, onUploadClick }) {
             }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.success, display: "inline-block" }} />
               <span style={{ fontSize: 11, color: C.accent, fontWeight: 700, letterSpacing: "0.1em" }}>
-                CENTRE FOR E-GOVERNANCE · ACTIVE
+                 Digital India Initiative · न्याय प्रणाली सशक्तिकरण
               </span>
             </div>
-            <h1 className="fade-up-1" style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: "clamp(36px, 5vw, 60px)", fontWeight: 800,
-              lineHeight: 1.1, color: C.textPrimary, marginBottom: 20,
-            }}>
-              Court Case<br />
-              <span className="hero-gradient-text">
-                Intelligence
-              </span><br />
-              Redefined
-            </h1>
+            <div className="fade-up-1" style={{ marginBottom: 18 }}>
+  <div style={{
+    fontSize: 12,
+    color: C.accent,
+    fontWeight: 800,
+    letterSpacing: "0.15em",
+    marginBottom: 8
+  }}>
+    System for Actionable Knowledge<br />
+    from Court & Hearing Yield Analysis
+  </div>
+
+  <h1 style={{
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "clamp(34px, 5vw, 56px)",
+    fontWeight: 800,
+    lineHeight: 1.15,
+    color: C.textPrimary,
+    marginBottom: 12,
+  }}>
+    SAKSHYA
+  </h1>
+
+  <div className="hero-gradient-text" style={{
+    fontSize: "clamp(20px, 2.5vw, 28px)",
+    fontWeight: 700
+  }}>
+    न्याय से ज्ञान · Justice to Intelligence
+  </div>
+</div>
             <p className="fade-up-2" style={{
               fontSize: 15, color: C.textSecondary, lineHeight: 1.8, maxWidth: 420, marginBottom: 32,
             }}>
               Upload High Court judgment PDFs and instantly extract critical directives, compliance requirements, appeal recommendations, and risk flags — powered by frontier AI.
             </p>
+            <div className="fade-up-3" style={{
+  display: "flex",
+  gap: 12,
+  flexWrap: "wrap",
+  fontSize: 11,
+  color: C.textMuted,
+  marginBottom: 20
+}}>
+  <span>🔐 Secure Processing</span>
+  <span>⚖️ Court-grade Accuracy</span>
+  <span>🇮🇳 Built for Indian Judiciary</span>
+</div>
+            <div style={{
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  background: C.accentSoft,
+  border: `1px solid ${C.accent}40`,
+  borderRadius: 20,
+  padding: "5px 14px",
+  marginBottom: 16,
+}}>
+  <span style={{ fontSize: 11, color: C.accent, fontWeight: 700 }}>
+    📜 SAKSHYA = Evidence · Proof · Truth in Indian Legal Context
+  </span>
+</div>
             <div className="fade-up-3" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <button onClick={onUploadClick} style={{
-                background: `linear-gradient(135deg, ${C.accent}, #0033cc)`,
-                color: "#fff", border: "none", borderRadius: 10,
+                background: `linear-gradient(90deg, #FF9933, #ffffff, #138808)`,
+color: "#000", border: "none", borderRadius: 10,
                 padding: "13px 28px", fontSize: 14, fontWeight: 700,
                 fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
                 boxShadow: `0 4px 24px ${C.accent}50`, letterSpacing: "0.03em",
@@ -432,7 +506,8 @@ function HeroSection({ C, onUploadClick }) {
                 📄 Analyze Judgment
               </button>
               <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{
-                background: "none", color: C.textSecondary,
+                background: `linear-gradient(90deg, #FF9933, #ffffff, #138808)`,
+color: "#000",
                 border: `1px solid ${C.border}`, borderRadius: 10,
                 padding: "13px 28px", fontSize: 14, fontWeight: 600,
                 fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
@@ -454,12 +529,12 @@ function HeroSection({ C, onUploadClick }) {
 
 // ─── Features Section ─────────────────────────────────────────────────────────
 const FEATURES = [
-  { icon: "🤖", title: "AI Judgment Analysis", desc: "Frontier language models parse dense legal prose to surface what matters — instantly." },
-  { icon: "📋", title: "Directive Extraction", desc: "Every actionable court directive tagged with priority, category, deadline, and authority." },
-  { icon: "🚨", title: "Compliance Tracking", desc: "Know exactly what actions are required, who is responsible, and by when." },
-  { icon: "⚖️", title: "Appeal Recommendation", desc: "Algorithmic review of judgment outcome to flag appeal viability and risk." },
-  { icon: "🔴", title: "Risk Flag Detection", desc: "High, medium, and low severity flags surface hidden legal or procedural risks." },
-  { icon: "📅", title: "Critical Date Mapping", desc: "Deadlines, limitation periods, and compliance dates extracted and highlighted." },
+  { icon: "🤖", title: "AI Nyaya Engine", desc: "Understands Indian legal language and judgments deeply." },
+  { icon: "📋", title: "Directive Intelligence", desc: "Extracts actionable court आदेश with priority tagging." },
+  { icon: "🚨", title: "Compliance Radar", desc: "Tracks deadlines, responsibilities, and legal obligations." },
+  { icon: "⚖️", title: "Appeal Intelligence", desc: "Suggests appeal strategy based on outcome analysis." },
+  { icon: "🔴", title: "Risk Detection System", desc: "Identifies hidden legal and procedural risks." },
+  { icon: "📅", title: "Timeline Intelligence", desc: "Maps all critical dates and limitation periods." },
 ];
 
 function FeaturesSection({ C }) {
@@ -698,10 +773,12 @@ function downloadPDFReport(data, fileName) {
 <div class="page">
   <div class="header">
     <div class="logo-row">
-      <div class="logo">⚖️</div>
+      <div class="logo">
+  <img src="assets/sakshya-logo.png" style="width:100%;height:100%;object-fit:contain;" />
+</div>
       <div class="logo-text">
         <h1>SAKSHYA</h1>
-        <p>CCMS · JUDGMENT INTELLIGENCE</p>
+        <p><p>🇮🇳 न्याय से ज्ञान · AI-Powered Judicial Intelligence System</p></p>
       </div>
     </div>
     <div class="case-title">${safeText(data.caseTitle || "Judgment Analysis")}</div>
@@ -839,6 +916,7 @@ function RiskFlag({ flag, severity, C }) {
 function ResultsSection({ data, fileName, C, onReset }) {
   const [tab, setTab] = useState("overview");
   const critical = data.keyDirectives?.filter((d) => d.priority === "critical").length || 0;
+  const isCriticalCase = critical > 2;
   const high = data.keyDirectives?.filter((d) => d.priority === "high").length || 0;
   const outcome = OUTCOME_MAP[data.outcome] || OUTCOME_MAP.unknown;
   const appeal = APPEAL_MAP[data.appealRecommendation] || APPEAL_MAP.unclear;
@@ -897,9 +975,10 @@ function ResultsSection({ data, fileName, C, onReset }) {
 
         {/* stats row */}
         <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
+          
           {[
             { label: "Total Directives", value: data.keyDirectives?.length || 0, color: C.accent },
-            { label: "Critical", value: critical, color: "#ef4444" },
+            { label: "🚨 Critical", value: critical, color: "#ef4444" },
             { label: "High Priority", value: high, color: "#f59e0b" },
             { label: "Risk Flags", value: data.riskFlags?.length || 0, color: "#f59e0b" },
           ].map((s) => (
@@ -908,6 +987,21 @@ function ResultsSection({ data, fileName, C, onReset }) {
             </Card>
           ))}
         </div>
+        
+       {isCriticalCase && (
+  <div style={{
+    padding: "10px 16px",
+    background: "#ef444415",
+    border: "1px solid #ef444440",
+    borderRadius: 10,
+    marginBottom: 16,
+    fontSize: 13,
+    color: "#ef4444",
+    fontWeight: 600
+  }}>
+    🚨 High-Risk Judgment Detected — Immediate Attention Required
+  </div>
+)}
 
         {/* tabs */}
         <div style={{ display: "flex", gap: 2, marginBottom: 24, borderBottom: `1px solid ${C.border}`, overflowX: "auto" }}>
@@ -1086,11 +1180,16 @@ function Footer({ C }) {
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 9,
-                background: `linear-gradient(135deg, ${C.accent}, #0033bb)`,
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-              }}>⚖️</div>
+              <img
+  src={logo}
+  alt="SAKSHYA"
+  style={{
+    width: 34,
+    height: 34,
+    objectFit: "contain",
+    borderRadius: 6
+  }}
+/>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 13, color: C.textPrimary }}>SAKSHYA</div>
                 <div style={{ fontSize: 9, color: C.textMuted, letterSpacing: "0.1em" }}>CCMS · JUDGMENT INTELLIGENCE</div>
@@ -1117,6 +1216,9 @@ function Footer({ C }) {
           borderTop: `1px solid ${C.border}`, paddingTop: 24,
           display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12,
         }}>
+          <div style={{ fontSize: 12, color: C.accent, marginTop: 8 }}>
+  🚀 Transforming Judgments into Actionable Governance Intelligence
+</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>
             © 2025 SAKSHYA · Centre for e-Governance · Court Case Monitoring System
           </div>
