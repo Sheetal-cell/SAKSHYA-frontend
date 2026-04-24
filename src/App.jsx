@@ -283,6 +283,32 @@ const GLOBAL_CSS = `
   }
 }
 
+@media (max-width: 768px) {
+  nav {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch; /* smooth scroll on mobile */
+  }
+
+  /* Make nav items stay in one line */
+  nav ul {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    gap: 16px;
+  }
+
+  /* Prevent items from shrinking */
+  nav li {
+    flex: 0 0 auto;
+  }
+
+  /* Optional: hide scrollbar */
+  nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
   @media (max-width: 480px) {
     .features-grid { grid-template-columns: 1fr !important; }
     .stats-row { grid-template-columns: 1fr !important; }
