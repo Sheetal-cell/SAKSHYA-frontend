@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { analyzeJudgment } from "./api";
 import logo from "./assets/sakshya-logo.png";
 import img from "./assets/img.png";
+import ChatAssistant from "./components/ChatAssistant";
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const LIGHT = {
@@ -1464,7 +1465,11 @@ export default function App() {
         )}
 
         <Footer C={C} />
-      </div>
-    </div>
+        
+                {/* ── AI Chat Assistant (floating bubble) ── */}
+                <ChatAssistant judgmentData={result} C={C} />
+        
+              </div>
+            </div>
   );
 }

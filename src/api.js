@@ -28,3 +28,26 @@ export async function analyzeJudgment(file) {
 
   return json.data;
 }
+
+/**
+ * Send a chat message to the backend.
+ * @param {object} context   - The full judgment data object from analyzeJudgment()
+ * @param {Array}  history   - Prior [{role, content}] messages
+ * @param {string} message   - The new user message
+ * @returns {Promise<string>} - The assistant's reply text
+ */
+export async function sendChatMessage(context, history, message) {
+  const response = await fetch(`${BASE_URL}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ context, history, message }),
+  });
+
+  const json = await response.json();
+
+  if (!response.ok) {
+    throw new Error(json.error || "Chat server error");
+  }
+
+  return json.reply;
+}
