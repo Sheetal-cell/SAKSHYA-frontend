@@ -1388,7 +1388,7 @@ export default function App() {
   const API_URL = import.meta.env.VITE_API_URL;
 
 if (!API_URL) {
-  console.warn("⚠️ VITE_API_URL not set. Using localhost (dev only).");
+  console.warn("⚠️ VITE_API_URL is not set. Using localhost (dev only).");
 }
 
 const BASE_URL = API_URL || "http://localhost:5000";
