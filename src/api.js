@@ -39,7 +39,10 @@ export async function analyzeJudgment(file) {
 export async function sendChatMessage(context, history, message) {
   const response = await fetch(`${BASE_URL}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+  "Content-Type": "application/json",
+  "Authorization": localStorage.getItem("token")
+},
     body: JSON.stringify({ context, history, message }),
   });
 

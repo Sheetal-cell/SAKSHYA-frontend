@@ -1384,6 +1384,40 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState("");
+  const [user, setUser] = useState(null);
+  const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
+   // 🔹 Google login handler FIRST
+  const handleCredentialResponse = async (response) => {
+    const token = response.credential;
+
+    const res = await fetch(`${API_URL}/auth/google`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    const data = await res.json();
+    setUser(data.user);
+    localStorage.setItem("token", data.token);
+  };
+
+  // 🔹 THEN useEffect
+  useEffect(() => {
+  if (!window.google || user) return;
+
+  google.accounts.id.initialize({
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    callback: handleCredentialResponse,
+  });
+
+  google.accounts.id.renderButton(
+    document.getElementById("googleSignInDiv"),
+    { theme: "outline", size: "large" }
+  );
+}, [user]);
 
   const handleFile = async (f) => {
     setFile(f);
@@ -1415,6 +1449,27 @@ export default function App() {
   };
 
   const scrollToUpload = () => document.getElementById("upload")?.scrollIntoView({ behavior: "smooth" });
+   // ✅ LOGIN GATE (PUT HERE)
+  if (!user) {
+    return (
+      <div style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: C.bg,
+        color: C.textPrimary
+      }}>
+        <img src={logo} style={{ width: 80, marginBottom: 20 }} />
+        <h2>Welcome to SAKSHYA</h2>
+        <p style={{ color: C.textSecondary }}>Sign in to continue</p>
+
+        {/* 👇 THIS DIV IS REQUIRED */}
+        <div id="googleSignInDiv"></div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.textPrimary, position: "relative" }}>
