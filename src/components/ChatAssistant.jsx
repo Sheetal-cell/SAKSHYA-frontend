@@ -24,14 +24,19 @@ const SpeechRecognition =
     ? window.SpeechRecognition || window.webkitSpeechRecognition
     : null;
 
-function speak(text, onEnd) {
+function speak(text, lang = "en", onEnd) {
   if (!window.speechSynthesis) return;
+
   window.speechSynthesis.cancel();
+
   const utt = new SpeechSynthesisUtterance(text);
-  utt.lang  = "en-IN";
-  utt.rate  = 1;
+
+  utt.lang = lang === "hi" ? "hi-IN" : "en-IN";
+  utt.rate = 1;
   utt.pitch = 1;
+
   if (onEnd) utt.onend = onEnd;
+
   window.speechSynthesis.speak(utt);
 }
 
@@ -59,6 +64,7 @@ export default function ChatAssistant({ judgmentData, C }) {
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [error,      setError]      = useState("");
   const [lastFailed, setLastFailed] = useState(null); // stores message to retry
+  const [lang, setLang] = useState("en"); // "en" or "hi"
 
   const bottomRef   = useRef(null);
   const recognizerRef = useRef(null);
@@ -110,7 +116,9 @@ export default function ChatAssistant({ judgmentData, C }) {
         body: JSON.stringify({
           context: judgmentData,
           history: history.slice(0, -1),
-          message: trimmed,
+          message: lang === "hi"
+  ? `Answer in Hindi:\n${trimmed}`
+  : `Answer in English:\n${trimmed}`,
         }),
       });
 
@@ -120,7 +128,7 @@ export default function ChatAssistant({ judgmentData, C }) {
       const assistantMsg = { role: "assistant", content: json.reply, ts: Date.now() };
       setMessages(prev => [...prev, assistantMsg]);
 
-      if (ttsEnabled) speak(json.reply);
+      if (ttsEnabled) speak(json.reply, lang);
     } catch (err) {
       // Remove the user message we optimistically added so retry is clean
       setMessages(prev => prev.slice(0, -1));
@@ -148,7 +156,7 @@ export default function ChatAssistant({ judgmentData, C }) {
     }
 
     const recognizer = new SpeechRecognition();
-    recognizer.lang          = "en-IN";
+    recognizer.lang = lang === "hi" ? "hi-IN" : "en-IN";
     recognizer.interimResults = false;
     recognizer.maxAlternatives = 1;
 
@@ -265,6 +273,22 @@ export default function ChatAssistant({ judgmentData, C }) {
                 color: ttsEnabled ? accent : textM, fontSize: 14,
               }}
             >🔊</button>
+            <button
+  onClick={() => setLang(l => l === "en" ? "hi" : "en")}
+  title="Switch Language"
+  style={{
+    background: "transparent",
+    border: `1px solid ${border}`,
+    borderRadius: 8,
+    padding: "4px 8px",
+    cursor: "pointer",
+    color: textM,
+    fontSize: 12,
+    fontWeight: 700
+  }}
+>
+  {lang === "en" ? "EN" : "हिं"}
+</button>
 
             {/* Clear history */}
             {messages.length > 0 && (
@@ -385,7 +409,11 @@ export default function ChatAssistant({ judgmentData, C }) {
               onKeyDown={e => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
               }}
-              placeholder={hasDocument ? "Ask about this judgment…" : "Upload a PDF first…"}
+              placeholder={
+  hasDocument
+    ? (lang === "hi" ? "प्रश्न पूछें..." : "Ask about this judgment…")
+    : (lang === "hi" ? "पहले PDF अपलोड करें…" : "Upload a PDF first…")
+}
               disabled={!hasDocument || loading}
               rows={1}
               style={{
