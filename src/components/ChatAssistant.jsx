@@ -26,36 +26,59 @@ const SpeechRecognition =
 
 
 
-function speak(text, lang = "en", onEnd) {
+function speak(text, lang = "en") {
   if (!window.speechSynthesis) return;
 
-  window.speechSynthesis.cancel();
+  const synth = window.speechSynthesis;
+
+  // 🔁 cancel any previous speech
+  synth.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
 
-  const voices = window.speechSynthesis.getVoices();
+  const voices = synth.getVoices();
+  console.log("All voices:", voices);
 
   let selectedVoice;
 
   if (lang === "hi") {
-    selectedVoice = voices.find(v => v.lang === "hi-IN") 
-  || voices.find(v => v.lang.startsWith("hi"));
+    selectedVoice =
+      voices.find(v => v.lang === "hi-IN" && v.name.includes("Ananya")) ||
+      voices.find(v => v.lang === "hi-IN") ||
+      voices.find(v => v.lang.startsWith("hi"));
   } else {
-    selectedVoice = voices.find(v => v.lang === "en-IN");
-  }
-
-  // fallback if exact not found
-  if (!selectedVoice) {
-    selectedVoice = voices.find(v => v.lang.startsWith(lang));
+    selectedVoice =
+      voices.find(v => v.lang === "en-IN") ||
+      voices.find(v => v.lang.startsWith("en"));
   }
 
   if (selectedVoice) {
     utterance.voice = selectedVoice;
+    console.log("Using voice:", selectedVoice.name);
+  } else {
+    console.warn("No voice found, using default");
   }
 
-  utterance.lang = lang === "hi" ? "hi-IN" : "en-IN";
+  utterance.lang = lang === "hi" ? "hi-IN" : "en-US";
 
-  window.speechSynthesis.speak(utterance);
+  // 🚀 CRITICAL FIX: retry if speech fails
+  utterance.onerror = () => {
+    console.warn("Speech failed, retrying...");
+    setTimeout(() => synth.speak(utterance), 500);
+  };
+
+  synth.speak(utterance);
+}
+
+let speechUnlocked = false;
+
+function unlockSpeech() {
+  if (!speechUnlocked && window.speechSynthesis) {
+    const u = new SpeechSynthesisUtterance(" ");
+    window.speechSynthesis.speak(u);
+    speechUnlocked = true;
+    console.log("🔓 Speech unlocked");
+  }
 }
 // ─── Quick suggestion chips shown when chat is empty ─────────────────────────
 const SUGGESTIONS = [
@@ -170,11 +193,9 @@ setMessages(prev => [...prev, assistantMsg]);
 
 // ✅ UPDATED TTS LOGIC
 if (ttsEnabled) {
-  if (voicesLoaded) {
+  setTimeout(() => {
     speak(json.reply, lang);
-  } else {
-    setTimeout(() => speak(json.reply, lang), 300);
-  }
+  }, 800); // 🔥 important delay for deployed
 }
     } catch (err) {
       // Remove the user message we optimistically added so retry is clean
@@ -454,7 +475,11 @@ if (ttsEnabled) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                if (e.key === "Enter" && !e.shiftKey) { 
+  e.preventDefault(); 
+  unlockSpeech();   // ✅ ADD THIS
+  sendMessage(); 
+}
               }}
               placeholder={
   hasDocument
@@ -483,7 +508,10 @@ if (ttsEnabled) {
             {/* Mic button */}
             {SpeechRecognition && (
               <button
-                onClick={toggleVoiceInput}
+                onClick={() => {
+  unlockSpeech();   // ✅ ADD THIS
+  toggleVoiceInput();
+}}
                 disabled={!hasDocument || loading}
                 title={listening ? "Stop listening" : "Voice input"}
                 style={{
@@ -502,7 +530,10 @@ if (ttsEnabled) {
 
             {/* Send button */}
             <button
-              onClick={() => sendMessage()}
+              onClick={() => {
+  unlockSpeech();   // ✅ ADD THIS
+  sendMessage();
+}}
               disabled={!input.trim() || !hasDocument || loading}
               style={{
                 width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
