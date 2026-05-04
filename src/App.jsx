@@ -1509,23 +1509,26 @@ export default function App() {
   }, []);
 
   const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+  import.meta.env.VITE_API_BASE_URL || "https://sakshya-backend.onrender.com";
    // 🔹 Google login handler FIRST
-  const handleCredentialResponse = useCallback(async (response) => {
+  const handleCredentialResponse = useCallback((response) => {
     const token = response.credential;
 
-    const res = await fetch(`${API_URL}/auth/google`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ token }),
-    });
+    try {
+      // Decode the JWT token to get user info without needing a backend endpoint yet
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
 
-    const data = await res.json();
-    setUser(data.user);
-    localStorage.setItem("token", data.token);
-  }, [API_URL]);
+      const decodedUser = JSON.parse(jsonPayload);
+      setUser(decodedUser);
+      localStorage.setItem("token", token);
+    } catch (e) {
+      console.error("Failed to decode Google token", e);
+    }
+  }, []);
 
   const handleFile = async (f) => {
     setFile(f);
