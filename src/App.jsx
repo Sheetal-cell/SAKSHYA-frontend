@@ -1,10 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { analyzeJudgment } from "./api";
+import logo from "./assets/sakshya-logo.png";
+import img from "./assets/img.png";
+import ChatAssistant from "./components/ChatAssistant.jsx";
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const LIGHT = {
   bg: "#f4f5f7",
   surface: "#ffffff",
+  tricolor: "linear-gradient(90deg, #FF9933, #FFFFFF, #138808)",
   card: "#ffffff",
   border: "#e2e6ed",
   accent: "#1a5cff",
@@ -170,6 +174,142 @@ const GLOBAL_CSS = `
     .parties-dates { grid-template-columns: 1fr !important; }
     .details-grid  { grid-template-columns: 1fr 1fr !important; }
   }
+
+  @media (max-width: 768px) {
+  nav {
+    padding: 0 10px !important;
+  }
+
+  /* Allow proper spacing */
+  nav > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  nav > div:last-child {
+    flex-shrink: 0;
+  }
+}
+
+
+ @media (max-width: 768px) {
+  footer > div > div:first-child {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    text-align: center;
+  }
+
+  footer img {
+    margin: 0 auto;
+  }
+
+  footer p {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  footer > div > div:last-child {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 8px !important;
+  }
+}
+
+
+@media (max-width: 768px) {
+  #home {
+    padding-top: 140px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-illustration {
+    display: block !important;
+    width: 100%;
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .hero-illustration > div {
+    margin: 0 auto !important;
+    max-width: 260px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  /* Make sure navbar stays above */
+  nav {
+    z-index: 1000;
+  }
+
+  /* Logo (move it BELOW navbar) */
+  #home::before {
+    content: "";
+    position: absolute;
+    top: 80px; /* ⬅️ increase this (navbar height + gap) */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42px;
+    height: 42px;
+
+    background-image: url('/logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    z-index: 10; /* below navbar but visible */
+  }
+
+  /* Text below logo */
+  #home::after {
+    content: "SAKSHYA";
+    position: absolute;
+    top: 130px; /* ⬅️ keep spacing below logo */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: white;
+
+    z-index: 10;
+  }
+
+  /* Push content down properly */
+  #home {
+    position: relative;
+    padding-top: 180px !important; /* ⬅️ increase to avoid overlap */
+  }
+}
+
+@media (max-width: 768px) {
+  nav {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch; /* smooth scroll on mobile */
+  }
+
+  /* Make nav items stay in one line */
+  nav ul {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    gap: 16px;
+  }
+
+  /* Prevent items from shrinking */
+  nav li {
+    flex: 0 0 auto;
+  }
+
+  /* Optional: hide scrollbar */
+  nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
   @media (max-width: 480px) {
     .features-grid { grid-template-columns: 1fr !important; }
     .stats-row { grid-template-columns: 1fr !important; }
@@ -259,7 +399,16 @@ function HeroIllustration({ C }) {
         boxShadow: `0 0 60px ${C.accent}30`,
       }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 52, lineHeight: 1 }}>⚖️</div>
+          <img
+  src={img}
+  alt="SAKSHYA"
+  style={{
+    width: 100,
+    height: 100,
+    objectFit: "contain",
+    filter: "drop-shadow(0 0 12px rgba(59,127,255,0.5))"
+  }}
+/>
           <div style={{ fontSize: 10, color: C.accent, fontWeight: 800, letterSpacing: "0.12em", marginTop: 6 }}>SAKSHYA</div>
         </div>
       </div>
@@ -353,15 +502,38 @@ function Navbar({ theme, toggleTheme, C, onHome }) {
       display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "0 32px",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: `linear-gradient(135deg, ${C.accent}, #0033bb)`,
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17,
-        }}>⚖️</div>
+      <div style={{
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  overflowX: "auto",
+  maxWidth: "100%"
+}}>
+        <img
+  src={logo}
+  alt="SAKSHYA Logo"
+  style={{
+    width: 36,
+    height: 36,
+    objectFit: "contain",
+    transition: "transform 0.2s",
+    borderRadius: 8,
+    boxShadow: `0 0 12px ${C.accent}40`
+  }}
+  onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.1)"}
+  onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
+/>
         <div>
           <div style={{ fontWeight: 800, fontSize: 13, color: C.textPrimary, letterSpacing: "-0.01em" }}>SAKSHYA</div>
-          <div style={{ fontSize: 9, color: C.textMuted, letterSpacing: "0.1em", marginTop: -1 }}>CCMS · JUDGMENT INTELLIGENCE</div>
+          <div style={{
+  fontSize: 9,
+  color: C.textMuted,
+  letterSpacing: "0.08em",
+  marginTop: -1,
+  maxWidth: 220
+}}>
+  System for Actionable Knowledge from Court & Hearing Yield Analysis
+</div>
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -401,29 +573,74 @@ function HeroSection({ C, onUploadClick }) {
             }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.success, display: "inline-block" }} />
               <span style={{ fontSize: 11, color: C.accent, fontWeight: 700, letterSpacing: "0.1em" }}>
-                CENTRE FOR E-GOVERNANCE · ACTIVE
+                 Digital India Initiative · न्याय प्रणाली सशक्तिकरण
               </span>
             </div>
-            <h1 className="fade-up-1" style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: "clamp(36px, 5vw, 60px)", fontWeight: 800,
-              lineHeight: 1.1, color: C.textPrimary, marginBottom: 20,
-            }}>
-              Court Case<br />
-              <span className="hero-gradient-text">
-                Intelligence
-              </span><br />
-              Redefined
-            </h1>
+            <div className="fade-up-1" style={{ marginBottom: 18 }}>
+  <div style={{
+    fontSize: 12,
+    color: C.accent,
+    fontWeight: 800,
+    letterSpacing: "0.15em",
+    marginBottom: 8
+  }}>
+    System for Actionable Knowledge<br />
+    from Court & Hearing Yield Analysis
+  </div>
+
+  <h1 style={{
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "clamp(34px, 5vw, 56px)",
+    fontWeight: 800,
+    lineHeight: 1.15,
+    color: C.textPrimary,
+    marginBottom: 12,
+  }}>
+    SAKSHYA
+  </h1>
+
+  <div className="hero-gradient-text" style={{
+    fontSize: "clamp(20px, 2.5vw, 28px)",
+    fontWeight: 700
+  }}>
+    न्याय से ज्ञान · Justice to Intelligence
+  </div>
+</div>
             <p className="fade-up-2" style={{
               fontSize: 15, color: C.textSecondary, lineHeight: 1.8, maxWidth: 420, marginBottom: 32,
             }}>
               Upload High Court judgment PDFs and instantly extract critical directives, compliance requirements, appeal recommendations, and risk flags — powered by frontier AI.
             </p>
+            <div className="fade-up-3" style={{
+  display: "flex",
+  gap: 12,
+  flexWrap: "wrap",
+  fontSize: 11,
+  color: C.textMuted,
+  marginBottom: 20
+}}>
+  <span>🔐 Secure Processing</span>
+  <span>⚖️ Court-grade Accuracy</span>
+  <span>🇮🇳 Built for Indian Judiciary</span>
+</div>
+            <div style={{
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  background: C.accentSoft,
+  border: `1px solid ${C.accent}40`,
+  borderRadius: 20,
+  padding: "5px 14px",
+  marginBottom: 16,
+}}>
+  <span style={{ fontSize: 11, color: C.accent, fontWeight: 700 }}>
+    📜 SAKSHYA = Evidence · Proof · Truth in Indian Legal Context
+  </span>
+</div>
             <div className="fade-up-3" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <button onClick={onUploadClick} style={{
-                background: `linear-gradient(135deg, ${C.accent}, #0033cc)`,
-                color: "#fff", border: "none", borderRadius: 10,
+                background: `linear-gradient(90deg, #FF9933, #ffffff, #138808)`,
+color: "#000", border: "none", borderRadius: 10,
                 padding: "13px 28px", fontSize: 14, fontWeight: 700,
                 fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
                 boxShadow: `0 4px 24px ${C.accent}50`, letterSpacing: "0.03em",
@@ -432,7 +649,8 @@ function HeroSection({ C, onUploadClick }) {
                 📄 Analyze Judgment
               </button>
               <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{
-                background: "none", color: C.textSecondary,
+                background: `linear-gradient(90deg, #FF9933, #ffffff, #138808)`,
+color: "#000",
                 border: `1px solid ${C.border}`, borderRadius: 10,
                 padding: "13px 28px", fontSize: 14, fontWeight: 600,
                 fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
@@ -454,12 +672,12 @@ function HeroSection({ C, onUploadClick }) {
 
 // ─── Features Section ─────────────────────────────────────────────────────────
 const FEATURES = [
-  { icon: "🤖", title: "AI Judgment Analysis", desc: "Frontier language models parse dense legal prose to surface what matters — instantly." },
-  { icon: "📋", title: "Directive Extraction", desc: "Every actionable court directive tagged with priority, category, deadline, and authority." },
-  { icon: "🚨", title: "Compliance Tracking", desc: "Know exactly what actions are required, who is responsible, and by when." },
-  { icon: "⚖️", title: "Appeal Recommendation", desc: "Algorithmic review of judgment outcome to flag appeal viability and risk." },
-  { icon: "🔴", title: "Risk Flag Detection", desc: "High, medium, and low severity flags surface hidden legal or procedural risks." },
-  { icon: "📅", title: "Critical Date Mapping", desc: "Deadlines, limitation periods, and compliance dates extracted and highlighted." },
+  { icon: "🤖", title: "AI Nyaya Engine", desc: "Understands Indian legal language and judgments deeply." },
+  { icon: "📋", title: "Directive Intelligence", desc: "Extracts actionable court आदेश with priority tagging." },
+  { icon: "🚨", title: "Compliance Radar", desc: "Tracks deadlines, responsibilities, and legal obligations." },
+  { icon: "⚖️", title: "Appeal Intelligence", desc: "Suggests appeal strategy based on outcome analysis." },
+  { icon: "🔴", title: "Risk Detection System", desc: "Identifies hidden legal and procedural risks." },
+  { icon: "📅", title: "Timeline Intelligence", desc: "Maps all critical dates and limitation periods." },
 ];
 
 function FeaturesSection({ C }) {
@@ -698,10 +916,12 @@ function downloadPDFReport(data, fileName) {
 <div class="page">
   <div class="header">
     <div class="logo-row">
-      <div class="logo">⚖️</div>
+      <div class="logo">
+  <img src="assets/sakshya-logo.png" style="width:100%;height:100%;object-fit:contain;" />
+</div>
       <div class="logo-text">
         <h1>SAKSHYA</h1>
-        <p>CCMS · JUDGMENT INTELLIGENCE</p>
+        <p><p>🇮🇳 न्याय से ज्ञान · AI-Powered Judicial Intelligence System</p></p>
       </div>
     </div>
     <div class="case-title">${safeText(data.caseTitle || "Judgment Analysis")}</div>
@@ -839,6 +1059,7 @@ function RiskFlag({ flag, severity, C }) {
 function ResultsSection({ data, fileName, C, onReset }) {
   const [tab, setTab] = useState("overview");
   const critical = data.keyDirectives?.filter((d) => d.priority === "critical").length || 0;
+  const isCriticalCase = critical > 2;
   const high = data.keyDirectives?.filter((d) => d.priority === "high").length || 0;
   const outcome = OUTCOME_MAP[data.outcome] || OUTCOME_MAP.unknown;
   const appeal = APPEAL_MAP[data.appealRecommendation] || APPEAL_MAP.unclear;
@@ -897,9 +1118,10 @@ function ResultsSection({ data, fileName, C, onReset }) {
 
         {/* stats row */}
         <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
+          
           {[
             { label: "Total Directives", value: data.keyDirectives?.length || 0, color: C.accent },
-            { label: "Critical", value: critical, color: "#ef4444" },
+            { label: "🚨 Critical", value: critical, color: "#ef4444" },
             { label: "High Priority", value: high, color: "#f59e0b" },
             { label: "Risk Flags", value: data.riskFlags?.length || 0, color: "#f59e0b" },
           ].map((s) => (
@@ -908,6 +1130,21 @@ function ResultsSection({ data, fileName, C, onReset }) {
             </Card>
           ))}
         </div>
+        
+       {isCriticalCase && (
+  <div style={{
+    padding: "10px 16px",
+    background: "#ef444415",
+    border: "1px solid #ef444440",
+    borderRadius: 10,
+    marginBottom: 16,
+    fontSize: 13,
+    color: "#ef4444",
+    fontWeight: 600
+  }}>
+    🚨 High-Risk Judgment Detected — Immediate Attention Required
+  </div>
+)}
 
         {/* tabs */}
         <div style={{ display: "flex", gap: 2, marginBottom: 24, borderBottom: `1px solid ${C.border}`, overflowX: "auto" }}>
@@ -1086,11 +1323,16 @@ function Footer({ C }) {
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 9,
-                background: `linear-gradient(135deg, ${C.accent}, #0033bb)`,
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-              }}>⚖️</div>
+              <img
+  src={logo}
+  alt="SAKSHYA"
+  style={{
+    width: 34,
+    height: 34,
+    objectFit: "contain",
+    borderRadius: 6
+  }}
+/>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 13, color: C.textPrimary }}>SAKSHYA</div>
                 <div style={{ fontSize: 9, color: C.textMuted, letterSpacing: "0.1em" }}>CCMS · JUDGMENT INTELLIGENCE</div>
@@ -1117,6 +1359,9 @@ function Footer({ C }) {
           borderTop: `1px solid ${C.border}`, paddingTop: 24,
           display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12,
         }}>
+          <div style={{ fontSize: 12, color: C.accent, marginTop: 8 }}>
+  🚀 Transforming Judgments into Actionable Governance Intelligence
+</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>
             © 2025 SAKSHYA · Centre for e-Governance · Court Case Monitoring System
           </div>
@@ -1139,6 +1384,45 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState("");
+  const [user, setUser] = useState(null);
+  const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  console.warn("⚠️ VITE_API_URL is not set. Using localhost (dev only).");
+}
+
+const BASE_URL = API_URL || "http://localhost:5000";
+   // 🔹 Google login handler FIRST
+  const handleCredentialResponse = async (response) => {
+    const token = response.credential;
+
+    const res = await fetch(`${BASE_URL}/auth/google`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    const data = await res.json();
+    setUser(data.user);
+    localStorage.setItem("token", data.token);
+  };
+
+  // 🔹 THEN useEffect
+  useEffect(() => {
+  if (!window.google || user) return;
+
+  google.accounts.id.initialize({
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    callback: handleCredentialResponse,
+  });
+
+  google.accounts.id.renderButton(
+    document.getElementById("googleSignInDiv"),
+    { theme: "outline", size: "large" }
+  );
+}, [user]);
 
   const handleFile = async (f) => {
     setFile(f);
@@ -1170,6 +1454,27 @@ export default function App() {
   };
 
   const scrollToUpload = () => document.getElementById("upload")?.scrollIntoView({ behavior: "smooth" });
+   // ✅ LOGIN GATE (PUT HERE)
+  if (!user) {
+    return (
+      <div style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: C.bg,
+        color: C.textPrimary
+      }}>
+        <img src={logo} style={{ width: 80, marginBottom: 20 }} />
+        <h2>Welcome to SAKSHYA</h2>
+        <p style={{ color: C.textSecondary }}>Sign in to continue</p>
+
+        {/* 👇 THIS DIV IS REQUIRED */}
+        <div id="googleSignInDiv"></div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.textPrimary, position: "relative" }}>
@@ -1220,8 +1525,12 @@ export default function App() {
         )}
 
         <Footer C={C} />
-      </div>
-    </div>
+        
+                {/* ── AI Chat Assistant (floating bubble) ── */}
+                <ChatAssistant judgmentData={result} C={C} />
+        
+              </div>
+            </div>
   );
 }
 

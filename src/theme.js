@@ -29,3 +29,4 @@ export const CATEGORY_COLORS = {
   inquiry: "#f59e0b",
   other: "#4a5a72",
 };
+
