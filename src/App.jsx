@@ -1135,32 +1135,129 @@ function downloadPDFReport(data, fileName) {
   };
 }
 
+// ─── Timeline Generator ───────────────────────────────────────────────────────
+function Timeline({ dates, C }) {
+  if (!dates?.length) return <div style={{ color: C.textMuted, fontSize: 13 }}>No specific dates extracted.</div>;
+  return (
+    <div style={{ position: "relative", paddingLeft: 16, marginTop: 8 }}>
+      <div style={{ position: "absolute", top: 4, bottom: 4, left: 3, width: 2, background: C.border }} />
+      {dates.map((d, i) => (
+        <div key={i} style={{ position: "relative", marginBottom: 16 }}>
+          <div style={{
+            position: "absolute", left: -18, top: 4, width: 10, height: 10,
+            borderRadius: "50%", background: C.surface, border: `2px solid ${C.accent}`,
+            zIndex: 1, boxShadow: `0 0 8px ${C.accent}40`
+          }} />
+          <div style={{ fontSize: 13, color: C.warn, fontWeight: 700, marginBottom: 2 }}>{d.date}</div>
+          <div style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.4 }}>{d.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Risk Meter ───────────────────────────────────────────────────────────────
+function RiskMeter({ score, C }) {
+  const normalizedScore = Math.min(100, Math.max(0, score));
+  let color = "#10b981"; // green
+  let label = "Low Risk";
+  if (normalizedScore > 30) { color = "#f59e0b"; label = "Medium Risk"; }
+  if (normalizedScore > 70) { color = "#ef4444"; label = "High Risk"; }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 20px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12 }}>
+      <div style={{ position: "relative", width: 60, height: 60, flexShrink: 0 }}>
+        <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={C.border} strokeWidth="3" />
+          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={color} strokeWidth="3" strokeDasharray={`${normalizedScore}, 100`} style={{ transition: "stroke-dasharray 1s ease-out" }} />
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: C.textPrimary }}>
+          {normalizedScore}
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 800, color: C.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Overall Risk Score</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function calculateRiskScore(data) {
+  let score = 0;
+  if (data.riskFlags) {
+    data.riskFlags.forEach(r => {
+      if (r.severity === "high") score += 20;
+      else if (r.severity === "medium") score += 10;
+      else score += 5;
+    });
+  }
+  if (data.keyDirectives) {
+    data.keyDirectives.forEach(d => {
+      if (d.priority === "critical") score += 15;
+      else if (d.priority === "high") score += 5;
+    });
+  }
+  return score;
+}
+
 // ─── Results Section ──────────────────────────────────────────────────────────
-function DirectiveCard({ d, index, C }) {
+function DirectiveCard({ d, index, C, fileKey }) {
   const pc = PRIORITY_COLORS[d.priority] || C.textMuted;
+  const storageKey = `sakshya_checklist_${fileKey}_${index}`;
+  const [status, setStatus] = useState(() => localStorage.getItem(storageKey) || "Pending");
+
+  const handleStatusChange = (newStatus) => {
+    setStatus(newStatus);
+    localStorage.setItem(storageKey, newStatus);
+  };
+
+  const isCompleted = status === "Completed";
+
   return (
     <div style={{
-      background: C.surface, border: `1px solid ${C.border}`,
-      borderLeft: `3px solid ${pc}`, borderRadius: 12,
+      background: isCompleted ? `${C.surface}80` : C.surface, 
+      border: `1px solid ${isCompleted ? C.success + '40' : C.border}`,
+      borderLeft: `3px solid ${isCompleted ? C.success : pc}`, 
+      borderRadius: 12,
       padding: "14px 16px", marginBottom: 10,
+      opacity: isCompleted ? 0.8 : 1,
+      transition: "all 0.2s"
     }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{
           minWidth: 24, height: 24, borderRadius: "50%",
-          background: `${pc}22`, display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 10, fontWeight: 800, color: pc, flexShrink: 0,
+          background: isCompleted ? `${C.success}22` : `${pc}22`, 
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 10, fontWeight: 800, color: isCompleted ? C.success : pc, flexShrink: 0,
         }}>
-          {index}
+          {isCompleted ? "✓" : index}
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-            {d.priority && <Badge color={pc}>{d.priority}</Badge>}
-            {d.category && <Badge color={C.accent}>{d.category}</Badge>}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {d.priority && <Badge color={isCompleted ? C.success : pc}>{d.priority}</Badge>}
+              {d.category && <Badge color={C.accent}>{d.category}</Badge>}
+            </div>
+            
+            {/* Action Checklist Toggle */}
+            <div style={{ display: "flex", background: `${C.bg}80`, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+              {["Pending", "In Progress", "Completed"].map(opt => (
+                <button key={opt} onClick={() => handleStatusChange(opt)} style={{
+                  background: status === opt ? (opt === "Completed" ? C.success : opt === "In Progress" ? C.warn : C.textMuted) + "22" : "transparent",
+                  color: status === opt ? (opt === "Completed" ? C.success : opt === "In Progress" ? C.warn : C.textPrimary) : C.textSecondary,
+                  border: "none", padding: "4px 10px", fontSize: 11, fontWeight: status === opt ? 700 : 500,
+                  cursor: "pointer", transition: "all 0.2s"
+                }}>
+                  {opt === "Completed" ? "✓ " : ""}{opt}
+                </button>
+              ))}
+            </div>
           </div>
-          <p style={{ margin: 0, fontSize: 13.5, color: C.textPrimary, lineHeight: 1.65 }}>{d.directive}</p>
+          <p style={{ margin: 0, fontSize: 13.5, color: isCompleted ? C.textSecondary : C.textPrimary, lineHeight: 1.65, textDecoration: isCompleted ? "line-through" : "none" }}>{d.directive}</p>
           <div style={{ marginTop: 8, display: "flex", gap: 16, flexWrap: "wrap" }}>
             {d.deadline && (
-              <span style={{ fontSize: 11, color: C.warn }}>⏰ Deadline: <strong>{d.deadline}</strong></span>
+              <span style={{ fontSize: 11, color: isCompleted ? C.textMuted : C.warn }}>⏰ Deadline: <strong>{d.deadline}</strong></span>
             )}
             {d.authority && (
               <span style={{ fontSize: 11, color: C.textSecondary }}>🏛️ {d.authority}</span>
@@ -1199,6 +1296,7 @@ function ResultsSection({ data, fileName, C, onReset }) {
   const high = data.keyDirectives?.filter((d) => d.priority === "high").length || 0;
   const outcome = OUTCOME_MAP[data.outcome] || OUTCOME_MAP.unknown;
   const appeal = APPEAL_MAP[data.appealRecommendation] || APPEAL_MAP.unclear;
+  const riskScore = calculateRiskScore(data);
 
   const tabs = [
     { id: "overview", label: "Overview", icon: "📊" },
@@ -1302,6 +1400,9 @@ function ResultsSection({ data, fileName, C, onReset }) {
         {/* ── OVERVIEW TAB ── */}
         {tab === "overview" && (
           <div className="fade-in">
+            <div style={{ marginBottom: 18 }}>
+               <RiskMeter score={riskScore} C={C} />
+            </div>
             <Card style={{ marginBottom: 18 }} glow={`${C.accent}22`} C={C}>
               <SectionTitle icon="📝" title="Judgment Summary" C={C} />
               <p style={{ margin: 0, fontSize: 14, color: C.textPrimary, lineHeight: 1.8 }}>
@@ -1330,15 +1431,7 @@ function ResultsSection({ data, fileName, C, onReset }) {
               </Card>
               <Card C={C}>
                 <SectionTitle icon="📅" title="Critical Dates" C={C} />
-                {data.criticalDates?.length
-                  ? data.criticalDates.map((d, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 7, fontSize: 13 }}>
-                      <span style={{ color: C.textSecondary }}>{d.label}</span>
-                      <span style={{ color: C.warn, fontWeight: 600 }}>{d.date}</span>
-                    </div>
-                  ))
-                  : <div style={{ color: C.textMuted, fontSize: 13 }}>No specific dates extracted.</div>
-                }
+                <Timeline dates={data.criticalDates} C={C} />
               </Card>
             </div>
             <Card glow={data.complianceRequired ? "#ef444422" : undefined} C={C}>
@@ -1373,7 +1466,7 @@ function ResultsSection({ data, fileName, C, onReset }) {
                   const ord = { critical: 0, high: 1, medium: 2, low: 3 };
                   return (ord[a.priority] ?? 4) - (ord[b.priority] ?? 4);
                 })
-                .map((d, i) => <DirectiveCard key={d.id || i} d={d} index={i + 1} C={C} />)
+                .map((d, i) => <DirectiveCard key={d.id || i} d={d} index={i + 1} C={C} fileKey={data.caseNumber || fileName} />)
               : <div style={{ textAlign: "center", color: C.textMuted, padding: 48, fontSize: 14 }}>No directives extracted.</div>
             }
           </div>
@@ -1382,6 +1475,9 @@ function ResultsSection({ data, fileName, C, onReset }) {
         {/* ── RISKS TAB ── */}
         {tab === "risks" && (
           <div className="fade-in">
+            <div style={{ marginBottom: 24 }}>
+               <RiskMeter score={riskScore} C={C} />
+            </div>
             {data.riskFlags?.length
               ? data.riskFlags.map((r, i) => <RiskFlag key={i} {...r} C={C} />)
               : <div style={{ textAlign: "center", color: C.textMuted, padding: 48, fontSize: 14 }}>✅ No significant risk flags identified.</div>
