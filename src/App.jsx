@@ -485,6 +485,81 @@ function HeroIllustration({ C }) {
   );
 }
 
+// ─── Scrolly Canvas Background ────────────────────────────────────────────────
+function ScrollyCanvasBackground({ theme, blueFrames, redFrames }) {
+  const canvasRef = useRef(null);
+  const frameIndexRef = useRef(0);
+  const requestRef = useRef();
+
+  useEffect(() => {
+    const isDark = theme === "dark";
+    const images = isDark ? blueFrames : redFrames;
+    const FRAME_COUNT = isDark ? 112 : 120;
+    
+    if (!images || images.length === 0) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const drawFrame = (index) => {
+      const safeIndex = Math.min(index, FRAME_COUNT - 1);
+      if (!canvas || !ctx || !images[safeIndex] || !images[safeIndex].complete) return;
+      const img = images[safeIndex];
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+      const x = (canvas.width / 2) - (img.width / 2) * scale;
+      // Push the image down slightly (by 15% of the screen height) so the face is clearly visible under the navbar
+      const y = (canvas.height / 2) - (img.height / 2) * scale + (canvas.height * 0.15);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+    };
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      let scrollFraction = scrollTop / maxScroll;
+      scrollFraction = Math.max(0, Math.min(1, scrollFraction));
+      
+      const frameIndex = Math.min(FRAME_COUNT - 1, Math.floor(scrollFraction * FRAME_COUNT));
+      
+      if (frameIndex !== frameIndexRef.current || requestRef.current === undefined) {
+        frameIndexRef.current = frameIndex;
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        requestRef.current = requestAnimationFrame(() => drawFrame(frameIndexRef.current));
+      }
+    };
+
+    // Force draw when theme/images change
+    if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    requestRef.current = requestAnimationFrame(() => drawFrame(frameIndexRef.current));
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', () => drawFrame(frameIndexRef.current));
+    handleScroll();
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', () => drawFrame(frameIndexRef.current));
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+        requestRef.current = undefined;
+      }
+    };
+  }, [theme, blueFrames, redFrames]);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: -2, overflow: "hidden", backgroundColor: "#000" }}>
+      <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", transition: "opacity 0.3s ease" }} />
+      <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.6)" }} />
+    </div>
+  );
+}
+
 // ─── Animated Background ──────────────────────────────────────────────────────
 function AnimatedBackground({ C, theme }) {
   return (
@@ -1438,15 +1513,33 @@ function Footer({ C }) {
 }
 
 // ─── Splash Screen ────────────────────────────────────────────────────────────
-function SplashScreen({ C, theme }) {
+function SplashScreen({ C, theme, isLoaded, loadProgress }) {
   return (
     <>
       <style>{GLOBAL_CSS}</style>
-      <div style={{ height: "100vh", width: "100vw", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, position: "relative", overflow: "hidden" }}>
+      <div style={{ height: "100vh", width: "100vw", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.bg, position: "relative", overflow: "hidden" }}>
         <AnimatedBackground C={C} theme={theme} />
-        <div style={{ zIndex: 1, animation: "splashSequence 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards" }}>
+        <div style={{ 
+          zIndex: 1, 
+          animation: isLoaded ? "splashSequence 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards" : "none",
+          transform: isLoaded ? undefined : "scale(1.2)",
+        }}>
           <HeroIllustration C={C} />
         </div>
+        {!isLoaded && (
+          <div style={{
+            position: "absolute", bottom: "20%", zIndex: 2,
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 12
+          }}>
+            <div style={{ 
+              fontSize: 14, color: C.textSecondary, fontWeight: 700, letterSpacing: "0.15em",
+              animation: "pulseRing 2s infinite alternate", fontFamily: "'DM Sans', sans-serif" 
+            }}>
+              PAGE IS LOADING PLEASE WAIT...
+            </div>
+            <div style={{ fontSize: 13, color: C.accent, fontWeight: 800 }}>{loadProgress}%</div>
+          </div>
+        )}
       </div>
     </>
   );
@@ -1501,12 +1594,60 @@ export default function App() {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState("");
   const [user, setUser] = useState(null);
+  
+  // Preloading State
   const [showSplash, setShowSplash] = useState(true);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
+  
+  const blueFramesRef = useRef([]);
+  const redFramesRef = useRef([]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 2500);
-    return () => clearTimeout(timer);
+    let loadedCount = 0;
+    const totalFrames = 112 + 120; // 232
+    const blueArr = [];
+    const redArr = [];
+    
+    const onLoad = () => {
+      loadedCount++;
+      setLoadProgress(Math.floor((loadedCount / totalFrames) * 100));
+      if (loadedCount === totalFrames) {
+        setImagesLoaded(true);
+      }
+    };
+
+    // Load Blue Frames (112)
+    for (let i = 0; i < 112; i++) {
+      const img = new Image();
+      const frameNum = i.toString().padStart(3, '0');
+      img.src = `/blue/frame_${frameNum}_delay-0.071s.webp`;
+      img.onload = onLoad;
+      img.onerror = onLoad;
+      blueArr.push(img);
+    }
+    
+    // Load Red Frames (120)
+    for (let i = 0; i < 120; i++) {
+      const img = new Image();
+      const frameNum = i.toString().padStart(3, '0');
+      img.src = `/red/frame_${frameNum}_delay-0.066s.webp`;
+      img.onload = onLoad;
+      img.onerror = onLoad;
+      redArr.push(img);
+    }
+    
+    blueFramesRef.current = blueArr;
+    redFramesRef.current = redArr;
   }, []);
+
+  useEffect(() => {
+    if (imagesLoaded) {
+      // Once loaded, allow the zoom out animation to play, then unmount splash
+      const timer = setTimeout(() => setShowSplash(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [imagesLoaded]);
 
   const API_URL =
   import.meta.env.VITE_API_BASE_URL || "https://sakshya-backend.onrender.com";
@@ -1561,7 +1702,7 @@ export default function App() {
 
   const scrollToUpload = () => document.getElementById("upload")?.scrollIntoView({ behavior: "smooth" });
   if (showSplash) {
-    return <SplashScreen C={C} theme={theme} />;
+    return <SplashScreen C={C} theme={theme} isLoaded={imagesLoaded} loadProgress={loadProgress} />;
   }
 
    // ✅ LOGIN GATE (PUT HERE)
@@ -1570,9 +1711,10 @@ export default function App() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.textPrimary, position: "relative" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", color: C.textPrimary, position: "relative" }}>
       <style>{GLOBAL_CSS}</style>
 
+      <ScrollyCanvasBackground theme={theme} blueFrames={blueFramesRef.current} redFrames={redFramesRef.current} />
       <AnimatedBackground C={C} theme={theme} />
 
       {/* All sections sit above background */}
