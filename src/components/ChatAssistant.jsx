@@ -16,7 +16,7 @@ const BASE_URL =
     : "https://sakshya-backend.onrender.com";
 
 const STORAGE_KEY = "sakshya_chat_history";
-const MAX_STORED   = 40; // max messages kept in localStorage
+const MAX_STORED  = 40;
 
 // ─── Web Speech API helpers ───────────────────────────────────────────────────
 const SpeechRecognition =
@@ -24,50 +24,52 @@ const SpeechRecognition =
     ? window.SpeechRecognition || window.webkitSpeechRecognition
     : null;
 
-
-
+// ✅ FIX 1: Voices are loaded asynchronously — always call getVoices() inside
+//           a trySpeak() that waits for onvoiceschanged if the list is empty.
 function speak(text, lang = "en") {
   if (!window.speechSynthesis) return;
 
   const synth = window.speechSynthesis;
-
-  // 🔁 cancel any previous speech
   synth.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang  = lang === "hi" ? "hi-IN" : "en-US";
+  utterance.rate  = 0.95;
 
-  const voices = synth.getVoices();
-  console.log("All voices:", voices);
+  const trySpeak = () => {
+    const voices = synth.getVoices();
 
-  let selectedVoice;
+    if (voices.length === 0) {
+      // Voices not ready yet — wait for the browser to load them
+      synth.onvoiceschanged = () => {
+        synth.onvoiceschanged = null;
+        trySpeak();
+      };
+      return;
+    }
 
-  if (lang === "hi") {
-    selectedVoice =
-      voices.find(v => v.lang === "hi-IN" && v.name.includes("Ananya")) ||
-      voices.find(v => v.lang === "hi-IN") ||
-      voices.find(v => v.lang.startsWith("hi"));
-  } else {
-    selectedVoice =
-      voices.find(v => v.lang === "en-IN") ||
-      voices.find(v => v.lang.startsWith("en"));
-  }
+    let selectedVoice;
+    if (lang === "hi") {
+      selectedVoice =
+        voices.find(v => v.lang === "hi-IN" && v.name.includes("Ananya")) ||
+        voices.find(v => v.lang === "hi-IN") ||
+        voices.find(v => v.lang.startsWith("hi"));
+    } else {
+      selectedVoice =
+        voices.find(v => v.lang === "en-IN") ||
+        voices.find(v => v.lang === "en-US") ||
+        voices.find(v => v.lang.startsWith("en"));
+    }
 
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
-    console.log("Using voice:", selectedVoice.name);
-  } else {
-    console.warn("No voice found, using default");
-  }
+    if (selectedVoice) utterance.voice = selectedVoice;
 
-  utterance.lang = lang === "hi" ? "hi-IN" : "en-US";
+    // ✅ FIX 2: No more recursive retry on error — just log it cleanly
+    utterance.onerror = (e) => console.warn("TTS error:", e.error);
 
-  // 🚀 CRITICAL FIX: retry if speech fails
-  utterance.onerror = () => {
-    console.warn("Speech failed, retrying...");
-    setTimeout(() => synth.speak(utterance), 500);
+    synth.speak(utterance);
   };
 
-  synth.speak(utterance);
+  trySpeak();
 }
 
 let speechUnlocked = false;
@@ -77,9 +79,9 @@ function unlockSpeech() {
     const u = new SpeechSynthesisUtterance(" ");
     window.speechSynthesis.speak(u);
     speechUnlocked = true;
-    console.log("🔓 Speech unlocked");
   }
 }
+
 // ─── Quick suggestion chips shown when chat is empty ─────────────────────────
 const SUGGESTIONS = [
   "Summarise this judgment",
@@ -91,66 +93,49 @@ const SUGGESTIONS = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function ChatAssistant({ judgmentData, C }) {
-  // ── state ──────────────────────────────────────────────────────────────────
   const [open,       setOpen]       = useState(false);
   const [messages,   setMessages]   = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
   });
   const [input,      setInput]      = useState("");
   const [loading,    setLoading]    = useState(false);
   const [listening,  setListening]  = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [error,      setError]      = useState("");
-  const [lastFailed, setLastFailed] = useState(null); // stores message to retry
-  const [lang, setLang] = useState("en"); // "en" or "hi"
-  const [voicesLoaded, setVoicesLoaded] = useState(false);
-  const bottomRef   = useRef(null);
-  const recognizerRef = useRef(null);
-  const inputRef    = useRef(null);
+  const [lastFailed, setLastFailed] = useState(null);
+  const [lang,       setLang]       = useState("en");
 
-  // ── persist history to localStorage ───────────────────────────────────────
+  const bottomRef     = useRef(null);
+  const recognizerRef = useRef(null);
+  const inputRef      = useRef(null);
+
+  // ── persist history ────────────────────────────────────────────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED)));
-    } catch { /* quota exceeded — ignore */ }
+    } catch { /* quota exceeded */ }
   }, [messages]);
 
-  // ── auto-scroll to bottom ──────────────────────────────────────────────────
+  // ── auto-scroll ────────────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
-  // ── focus input when chat opens ────────────────────────────────────────────
+  // ── focus input on open ────────────────────────────────────────────────────
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 120);
   }, [open]);
+
+  // ── preload voices on mount ────────────────────────────────────────────────
   useEffect(() => {
-  window.speechSynthesis.onvoiceschanged = () => {
-    console.log("Voices loaded:", window.speechSynthesis.getVoices());
-  };
-}, []);
+    const load = () => window.speechSynthesis.getVoices(); // trigger browser load
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  }, []);
 
-useEffect(() => {
-  const loadVoices = () => {
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      setVoicesLoaded(true);
-      console.log("Voices loaded:", voices);
-    }
-  };
-
-  loadVoices();
-
-  window.speechSynthesis.onvoiceschanged = loadVoices;
-
-  return () => {
-    window.speechSynthesis.onvoiceschanged = null;
-  };
-}, []);
-
-  // ─── send a message ────────────────────────────────────────────────────────
+  // ─── send message ──────────────────────────────────────────────────────────
   const sendMessage = useCallback(async (text) => {
     const trimmed = (text || input).trim();
     if (!trimmed || loading) return;
@@ -162,7 +147,8 @@ useEffect(() => {
 
     setError("");
     setLastFailed(null);
-    const userMsg = { role: "user", content: trimmed, ts: Date.now() };
+
+    const userMsg     = { role: "user", content: trimmed, ts: Date.now() };
     const nextMessages = [...messages, userMsg];
     setMessages(nextMessages);
     setInput("");
@@ -175,13 +161,16 @@ useEffect(() => {
 
       const res = await fetch(`${BASE_URL}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
         body: JSON.stringify({
           context: judgmentData,
           history: history.slice(0, -1),
           message: lang === "hi"
-  ? `Answer in Hindi:\n${trimmed}`
-  : `Answer in English:\n${trimmed}`,
+            ? `Answer in Hindi:\n${trimmed}`
+            : `Answer in English:\n${trimmed}`,
         }),
       });
 
@@ -189,16 +178,12 @@ useEffect(() => {
       if (!res.ok) throw new Error(json.error || "Server error");
 
       const assistantMsg = { role: "assistant", content: json.reply, ts: Date.now() };
-setMessages(prev => [...prev, assistantMsg]);
+      setMessages(prev => [...prev, assistantMsg]);
 
-// ✅ UPDATED TTS LOGIC
-if (ttsEnabled) {
-  setTimeout(() => {
-    speak(json.reply, lang);
-  }, 800); // 🔥 important delay for deployed
-}
+      // ✅ FIX 3: No arbitrary 800ms delay — speak immediately after reply arrives
+      if (ttsEnabled) speak(json.reply, lang);
+
     } catch (err) {
-      // Remove the user message we optimistically added so retry is clean
       setMessages(prev => prev.slice(0, -1));
       setLastFailed(trimmed);
       const msg = err.message?.includes("terminated") || err.message?.includes("fetch")
@@ -208,7 +193,9 @@ if (ttsEnabled) {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, messages, judgmentData, ttsEnabled, voicesLoaded, lang]);
+
+  // ✅ FIX 4: Removed voicesLoaded from deps — it was unused inside and caused stale closures
+  }, [input, loading, messages, judgmentData, ttsEnabled, lang]);
 
   // ─── voice input ───────────────────────────────────────────────────────────
   const toggleVoiceInput = useCallback(() => {
@@ -216,7 +203,6 @@ if (ttsEnabled) {
       setError("Speech recognition is not supported in your browser.");
       return;
     }
-
     if (listening) {
       recognizerRef.current?.stop();
       setListening(false);
@@ -224,15 +210,14 @@ if (ttsEnabled) {
     }
 
     const recognizer = new SpeechRecognition();
-    recognizer.lang = lang === "hi" ? "hi-IN" : "en-IN";
-    recognizer.interimResults = false;
+    recognizer.lang            = lang === "hi" ? "hi-IN" : "en-IN";
+    recognizer.interimResults  = false;
     recognizer.maxAlternatives = 1;
 
     recognizer.onresult = (e) => {
       const transcript = e.results[0][0].transcript;
       setInput(transcript);
       setListening(false);
-      // auto-send after a short delay so user can see the transcription
       setTimeout(() => sendMessage(transcript), 300);
     };
     recognizer.onerror = () => setListening(false);
@@ -241,7 +226,7 @@ if (ttsEnabled) {
     recognizerRef.current = recognizer;
     recognizer.start();
     setListening(true);
-  }, [listening, sendMessage]);
+  }, [listening, sendMessage, lang]);
 
   // ─── clear history ─────────────────────────────────────────────────────────
   const clearHistory = () => {
@@ -254,15 +239,15 @@ if (ttsEnabled) {
   const unread      = !open && messages.length > 0 &&
     messages[messages.length - 1].role === "assistant";
 
-  // ─── styles (no external CSS needed) ──────────────────────────────────────
-  const accent   = C?.accent  || "#3b7fff";
-  const surface  = C?.surface || "#0e1520";
-  const card     = C?.card    || "#111929";
-  const border   = C?.border  || "#1e2d45";
-  const textP    = C?.textPrimary   || "#e8edf5";
-  const textS    = C?.textSecondary || "#8fa3c0";
-  const textM    = C?.textMuted     || "#4a607a";
-  const danger   = C?.danger  || "#ef4444";
+  // ─── styles ────────────────────────────────────────────────────────────────
+  const accent  = C?.accent        || "#3b7fff";
+  const surface = C?.surface       || "#0e1520";
+  const card    = C?.card          || "#111929";
+  const border  = C?.border        || "#1e2d45";
+  const textP   = C?.textPrimary   || "#e8edf5";
+  const textS   = C?.textSecondary || "#8fa3c0";
+  const textM   = C?.textMuted     || "#4a607a";
+  const danger  = C?.danger        || "#ef4444";
 
   return (
     <>
@@ -341,22 +326,21 @@ if (ttsEnabled) {
                 color: ttsEnabled ? accent : textM, fontSize: 14,
               }}
             >🔊</button>
+
+            {/* Language toggle */}
             <button
-  onClick={() => setLang(l => l === "en" ? "hi" : "en")}
-  title="Switch Language"
-  style={{
-    background: "transparent",
-    border: `1px solid ${border}`,
-    borderRadius: 8,
-    padding: "4px 8px",
-    cursor: "pointer",
-    color: textM,
-    fontSize: 12,
-    fontWeight: 700
-  }}
->
-  {lang === "en" ? "EN" : "हिं"}
-</button>
+              onClick={() => setLang(l => l === "en" ? "hi" : "en")}
+              title="Switch Language"
+              style={{
+                background: "transparent",
+                border: `1px solid ${border}`,
+                borderRadius: 8, padding: "4px 8px",
+                cursor: "pointer", color: textM,
+                fontSize: 12, fontWeight: 700,
+              }}
+            >
+              {lang === "en" ? "EN" : "हिं"}
+            </button>
 
             {/* Clear history */}
             {messages.length > 0 && (
@@ -378,7 +362,6 @@ if (ttsEnabled) {
             display: "flex", flexDirection: "column", gap: 10,
           }}>
             {messages.length === 0 ? (
-              /* empty state */
               <div style={{ textAlign: "center", marginTop: 20 }}>
                 <div style={{ fontSize: 32, marginBottom: 10 }}>⚖️</div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: textP, marginBottom: 6 }}>
@@ -409,7 +392,7 @@ if (ttsEnabled) {
               </div>
             ) : (
               messages.map((msg, i) => (
-                <MessageBubble key={i} msg={msg} accent={accent} card={card} textP={textP} textM={textM} />
+                <MessageBubble key={i} msg={msg} accent={accent} card={card} textP={textP} textM={textM} border={border} />
               ))
             )}
 
@@ -475,17 +458,17 @@ if (ttsEnabled) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey) { 
-  e.preventDefault(); 
-  unlockSpeech();   // ✅ ADD THIS
-  sendMessage(); 
-}
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  unlockSpeech();
+                  sendMessage();
+                }
               }}
               placeholder={
-  hasDocument
-    ? (lang === "hi" ? "प्रश्न पूछें..." : "Ask about this judgment…")
-    : (lang === "hi" ? "पहले PDF अपलोड करें…" : "Upload a PDF first…")
-}
+                hasDocument
+                  ? (lang === "hi" ? "प्रश्न पूछें..." : "Ask about this judgment…")
+                  : (lang === "hi" ? "पहले PDF अपलोड करें…" : "Upload a PDF first…")
+              }
               disabled={!hasDocument || loading}
               rows={1}
               style={{
@@ -508,10 +491,7 @@ if (ttsEnabled) {
             {/* Mic button */}
             {SpeechRecognition && (
               <button
-                onClick={() => {
-  unlockSpeech();   // ✅ ADD THIS
-  toggleVoiceInput();
-}}
+                onClick={() => { unlockSpeech(); toggleVoiceInput(); }}
                 disabled={!hasDocument || loading}
                 title={listening ? "Stop listening" : "Voice input"}
                 style={{
@@ -530,10 +510,7 @@ if (ttsEnabled) {
 
             {/* Send button */}
             <button
-              onClick={() => {
-  unlockSpeech();   // ✅ ADD THIS
-  sendMessage();
-}}
+              onClick={() => { unlockSpeech(); sendMessage(); }}
               disabled={!input.trim() || !hasDocument || loading}
               style={{
                 width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
@@ -556,9 +533,11 @@ if (ttsEnabled) {
 }
 
 // ─── Single message bubble ────────────────────────────────────────────────────
-function MessageBubble({ msg, accent, card, textP, textM }) {
+function MessageBubble({ msg, accent, card, textP, textM, border }) {
   const isUser = msg.role === "user";
-  const time   = msg.ts ? new Date(msg.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+  const time   = msg.ts
+    ? new Date(msg.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : "";
 
   return (
     <div style={{
