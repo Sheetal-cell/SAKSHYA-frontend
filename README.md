@@ -1,5 +1,5 @@
 # ⚖️ Sakshya – Frontend (CCMS Legal Intelligence System)
-
+backend repository: https://github.com/Sheetal-cell/SAKSHYA-backend
 ## 📌 Overview
 Sakshya Frontend is the UI layer of the CCMS (Judgment Intelligence System).  
 It provides a legal AI chat interface, dashboard analytics, and judgment analysis features.
