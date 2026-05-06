@@ -3,6 +3,9 @@ import { analyzeJudgment } from "./api";
 import logo from "./assets/sakshya-logo.png";
 import img from "./assets/img.png";
 import ChatAssistant from "./components/ChatAssistant.jsx";
+import Dashboard from "./components/Dashboard";
+
+
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const WARM = {
@@ -662,12 +665,12 @@ function Navbar({ theme, toggleTheme, C, onHome }) {
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        {["home", "features", "upload", "results", "contact"].map((id) => (
-          <button key={id} className="nav-link" onClick={() => scrollTo(id)}
-            style={{ color: C.textSecondary, padding: "6px 10px" }}>
-            {id.charAt(0).toUpperCase() + id.slice(1)}
-          </button>
-        ))}
+         {["home", "dashboard", "features", "upload", "results", "contact"].map((id) => (
+  <button key={id} className="nav-link" onClick={() => scrollTo(id)}
+    style={{ color: C.textSecondary, padding: "6px 10px" }}>
+    {id.charAt(0).toUpperCase() + id.slice(1)}
+  </button>
+))}
         <button onClick={toggleTheme} style={{
           marginLeft: 8,
           background: "linear-gradient(135deg, #ff4b82, #ff7e5f, #ff9933)",
@@ -1652,24 +1655,23 @@ export default function App() {
   const API_URL =
   import.meta.env.VITE_API_BASE_URL || "https://sakshya-backend.onrender.com";
    // 🔹 Google login handler FIRST
-  const handleCredentialResponse = useCallback((response) => {
-    const token = response.credential;
+  const handleCredentialResponse = useCallback(async (response) => {
+  try {
+    const res = await fetch(`${API_URL}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: response.credential }),
+    });
 
-    try {
-      // Decode the JWT token to get user info without needing a backend endpoint yet
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
 
-      const decodedUser = JSON.parse(jsonPayload);
-      setUser(decodedUser);
-      localStorage.setItem("token", token);
-    } catch (e) {
-      console.error("Failed to decode Google token", e);
-    }
-  }, []);
+    localStorage.setItem("token", data.token); // ← store app JWT
+    setUser(data.user);
+  } catch (e) {
+    console.error("Login failed:", e.message);
+  }
+}, [API_URL]);
 
   const handleFile = async (f) => {
     setFile(f);
@@ -1692,6 +1694,8 @@ export default function App() {
   };
 
   const reset = () => { setResult(null); setFile(null); setError(null); };
+
+  // inside your JSX, add a new section:
 
   const goHome = () => {
     reset();
@@ -1720,14 +1724,15 @@ export default function App() {
       {/* All sections sit above background */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <Navbar theme={theme} toggleTheme={() => setTheme(t => t === "dark" ? "warm" : "dark")} C={C} onHome={goHome} />
-
+        
         {/* Show hero + features only when no result */}
         {!result && (
-          <>
-            <HeroSection C={C} onUploadClick={scrollToUpload} />
-            <FeaturesSection C={C} />
-          </>
-        )}
+  <>
+    <HeroSection C={C} onUploadClick={scrollToUpload} />
+    <Dashboard C={C} />           {/* ← ADD THIS LINE */}
+    <FeaturesSection C={C} />
+  </>
+)}
 
         <UploadSection
           C={C}

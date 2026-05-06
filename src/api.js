@@ -11,46 +11,48 @@ export function fileToBase64(file) {
   });
 }
 
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 export async function analyzeJudgment(file) {
   const base64 = await fileToBase64(file);
 
   const response = await fetch(`${BASE_URL}/api/judgment/analyze`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({ base64, filename: file.name }),
   });
 
   const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.error || "Server error");
-  }
-
+  if (!response.ok) throw new Error(json.error || "Server error");
   return json.data;
 }
 
-/**
- * Send a chat message to the backend.
- * @param {object} context   - The full judgment data object from analyzeJudgment()
- * @param {Array}  history   - Prior [{role, content}] messages
- * @param {string} message   - The new user message
- * @returns {Promise<string>} - The assistant's reply text
- */
-export async function sendChatMessage(context, history, message) {
+export async function sendChatMessage(context, history, message, summaryId) {
   const response = await fetch(`${BASE_URL}/api/chat`, {
     method: "POST",
-    headers: {
-  "Content-Type": "application/json",
-  "Authorization": localStorage.getItem("token")
-},
-    body: JSON.stringify({ context, history, message }),
+    headers: authHeaders(),
+    body: JSON.stringify({ context, history, message, summaryId }),
   });
 
   const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.error || "Chat server error");
-  }
-
+  if (!response.ok) throw new Error(json.error || "Chat server error");
   return json.reply;
+}
+
+// ── Dashboard history ─────────────────────────────────────────────────────────
+export async function getDashboardHistory() {
+  const response = await fetch(`${BASE_URL}/api/judgment/history`, {
+    method: "GET",
+    headers: authHeaders(),
+  });
+
+  const json = await response.json();
+  if (!response.ok) throw new Error(json.error || "Failed to fetch history");
+  return json;
 }
