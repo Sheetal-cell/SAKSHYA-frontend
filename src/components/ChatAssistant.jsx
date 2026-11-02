@@ -128,7 +128,7 @@ const SUGGESTIONS = [
 ];
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function ChatAssistant({ judgmentData, C }) {
+export default function ChatAssistant({ judgmentData, C, isGuest = false }) {
   const [open,       setOpen]       = useState(false);
   const [messages,   setMessages]   = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
@@ -207,7 +207,7 @@ export default function ChatAssistant({ judgmentData, C }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          ...(isGuest ? { "X-Guest-Mode": "true" } : { "Authorization": `Bearer ${localStorage.getItem("token")}` }),
         },
         body: JSON.stringify({
           context: judgmentData,
