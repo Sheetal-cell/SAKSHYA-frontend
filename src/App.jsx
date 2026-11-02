@@ -2075,19 +2075,8 @@ function SplashScreen({ C, theme, isLoaded, loadProgress }) {
 }
 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
-function LoginScreen({ C, theme, handleCredentialResponse }) {
-  useEffect(() => {
-    if (!window.google) return;
-    google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      callback: handleCredentialResponse,
-    });
-    google.accounts.id.renderButton(
-      document.getElementById("googleSignInDiv"),
-      { theme: "outline", size: "large", type: "standard", shape: "pill", width: 250 }
-    );
-  }, [handleCredentialResponse]);
-
+function LoginScreen({ C, theme, onContinueGuest }) {
+  const [showNotice, setShowNotice] = useState(false);
   return (
     <>
       <style>{GLOBAL_CSS}</style>
@@ -2102,9 +2091,20 @@ function LoginScreen({ C, theme, handleCredentialResponse }) {
              <p style={{ color: C.textSecondary, fontSize: 14, marginBottom: 32, lineHeight: 1.6 }}>
                Sign in to access the AI-Powered Judicial Intelligence System
              </p>
-             <div style={{ display: "flex", justifyContent: "center" }}>
-               <div id="googleSignInDiv"></div>
-             </div>
+             <button onClick={() => setShowNotice(true)} style={{ width: "100%", padding: "13px 18px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.card, color: C.textPrimary, fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 12 }}>
+               Continue with Google
+             </button>
+             <button onClick={onContinueGuest} style={{ width: "100%", padding: "14px 18px", borderRadius: 10, border: "none", background: `linear-gradient(135deg, ${C.accent}, #8b5cf6)`, color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+               Continue as Guest
+             </button>
+             {showNotice && (
+               <div role="dialog" aria-modal="true" style={{ marginTop: 18, padding: 16, borderRadius: 12, border: `1px solid ${C.warn}`, background: `${C.warn}15`, color: C.textPrimary, textAlign: "left" }}>
+                 <strong>Google sign-in is under development.</strong>
+                 <p style={{ fontSize: 13, lineHeight: 1.6, margin: "8px 0 14px" }}>For now, please continue as a guest. You can use SAKSHYA without creating an account.</p>
+                 <button onClick={() => { setShowNotice(false); onContinueGuest(); }} style={{ padding: "9px 14px", border: "none", borderRadius: 8, background: C.accent, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Continue as Guest</button>
+                 <button onClick={() => setShowNotice(false)} style={{ marginLeft: 8, padding: "9px 14px", border: `1px solid ${C.border}`, borderRadius: 8, background: "transparent", color: C.textSecondary, cursor: "pointer" }}>Close</button>
+               </div>
+             )}
           </Card>
         </div>
       </div>
@@ -2232,6 +2232,8 @@ export default function App() {
   }
 }, [API_URL]);
 
+  const handleContinueGuest = () => setUser({ name: "Guest", isGuest: true });
+
   const handleFile = async (f) => {
     setFile(f);
     setLoading(true);
@@ -2240,7 +2242,7 @@ export default function App() {
     setProgress("Reading PDF…");
     try {
       setProgress("Sending to server for AI analysis…");
-      const data = await analyzeJudgment(f);
+      const data = await analyzeJudgment(f, { isGuest: !!user?.isGuest });
       setResult(data);
       // scroll to results after short delay
       setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 200);
@@ -2269,7 +2271,7 @@ export default function App() {
 
    // ✅ LOGIN GATE (PUT HERE)
   if (!user) {
-    return <LoginScreen C={C} theme={theme} handleCredentialResponse={handleCredentialResponse} />;
+    return <LoginScreen C={C} theme={theme} onContinueGuest={handleContinueGuest} />;
   }
 
   return (
@@ -2326,7 +2328,7 @@ export default function App() {
         <Footer C={C} />
         
         {/* ── AI Chat Assistant (floating bubble) ── */}
-        <ChatAssistant judgmentData={result} C={C} />
+        <ChatAssistant judgmentData={result} C={C} isGuest={!!user?.isGuest} />
         
       </div>
     </div>
