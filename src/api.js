@@ -30,7 +30,7 @@ export async function analyzeJudgment(file) {
 
   const json = await response.json();
   if (!response.ok) throw new Error(json.error || "Server error");
-  return json.data;
+  return { ...json.data, summaryId: json.summaryId, rag: json.rag };
 }
 
 export async function sendChatMessage(context, history, message, summaryId) {

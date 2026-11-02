@@ -211,6 +211,7 @@ export default function ChatAssistant({ judgmentData, C }) {
         },
         body: JSON.stringify({
           context: judgmentData,
+          summaryId: judgmentData?.summaryId,
           history: history.slice(0, -1),
           message: lang === "hi"
             ? `Answer in Hindi:\n${trimmed}`
