@@ -211,6 +211,7 @@ export default function ChatAssistant({ judgmentData, C }) {
         },
         body: JSON.stringify({
           context: judgmentData,
+          summaryId: judgmentData?.summaryId,
           history: history.slice(0, -1),
           message: lang === "hi"
             ? `Answer in Hindi:\n${trimmed}`
@@ -354,7 +355,7 @@ export default function ChatAssistant({ judgmentData, C }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 800, fontSize: 13, color: textP }}>SAKSHYA Assistant</div>
               <div style={{ fontSize: 10, color: hasDocument ? "#10b981" : textM }}>
-                {hasDocument ? "● Document loaded — ready to answer" : "○ Upload a PDF to start"}
+                {hasDocument ? (judgmentData?.rag?.indexed ? "● RAG ready — source passages enabled" : "● Document loaded — summary-based chat") : "○ Upload a PDF to start"}
               </div>
             </div>
 
