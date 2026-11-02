@@ -19,12 +19,12 @@ function authHeaders() {
   };
 }
 
-export async function analyzeJudgment(file) {
+export async function analyzeJudgment(file, { isGuest = false } = {}) {
   const base64 = await fileToBase64(file);
 
   const response = await fetch(`${BASE_URL}/api/judgment/analyze`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: { ...authHeaders(), ...(isGuest ? { "X-Guest-Mode": "true" } : {}) },
     body: JSON.stringify({ base64, filename: file.name }),
   });
 
